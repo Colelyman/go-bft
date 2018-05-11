@@ -60,7 +60,9 @@ func TraverseGraph(graphFilePath string, kmerFilePath string) {
 	// Iterate over each kmer found at kmerFilePath
 	for kmerScanner.Scan() {
 		kmer := graph.GetKmer(kmerScanner.Text())
-		graphStats.getKmerStats(kmer)
+		if kmer.Exists() {
+			graphStats.getKmerStats(kmer)
+		}
 	}
 
 	graphStats.finalize()
@@ -101,10 +103,12 @@ func IterateKmers(graphFilePath string, kmerFilePath string) func() *BFTKmer {
 	kmerScanner := bufio.NewScanner(kmerFile)
 
 	return func() *BFTKmer {
-		if kmerScanner.Scan() {
-			return graph.GetKmer(kmerScanner.Text())
-		} else {
-			return nil
+		for kmerScanner.Scan() {
+			kmer := graph.GetKmer(kmerScanner.Text())
+			if kmer.Exists() {
+				return kmer
+			}
 		}
+		return nil
 	}
 }
