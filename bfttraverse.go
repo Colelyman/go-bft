@@ -41,11 +41,13 @@ func (g *GraphStats) String() string {
 	return sb.String()
 }
 
-///////////////////////
-/// Graph Iterators ///
-///////////////////////
+//////////////////////
+/// Graph Iterator ///
+//////////////////////
 
-func TraverseGraph(graphFilePath string, kmerFilePath string) {
+type BFTKmerFunc func(*BFTKmer)
+
+func TraverseGraph(graphFilePath string, kmerFilePath string, kmerFunc BFTKmerFunc) {
 	graph := NewBFTGraph(graphFilePath)
 	kmerFile, err := os.Open(kmerFilePath)
 	if err != nil {
@@ -62,6 +64,7 @@ func TraverseGraph(graphFilePath string, kmerFilePath string) {
 		kmer := graph.GetKmer(kmerScanner.Text())
 		if kmer.Exists() {
 			graphStats.getKmerStats(kmer)
+			kmerFunc(kmer)
 		}
 	}
 
@@ -71,44 +74,5 @@ func TraverseGraph(graphFilePath string, kmerFilePath string) {
 
 	if err := kmerScanner.Err(); err != nil {
 		fmt.Println(err)
-	}
-}
-
-func IterateGraph(graphFilePath string, kmerFilePath string) {
-	nextBFTKmer := IterateKmers(graphFilePath, kmerFilePath)
-
-	graphStats := new(GraphStats)
-
-	// Iterate over each kmer found at kmerFilePath
-	for kmer := nextBFTKmer(); kmer != nil; {
-		graphStats.getKmerStats(kmer)
-	}
-
-	// Garbage collection?
-	nextBFTKmer = nil
-
-	graphStats.finalize()
-
-	fmt.Println(graphStats)
-}
-
-func IterateKmers(graphFilePath string, kmerFilePath string) func() *BFTKmer {
-	graph := NewBFTGraph(graphFilePath)
-	kmerFile, err := os.Open(kmerFilePath)
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer kmerFile.Close()
-
-	kmerScanner := bufio.NewScanner(kmerFile)
-
-	return func() *BFTKmer {
-		for kmerScanner.Scan() {
-			kmer := graph.GetKmer(kmerScanner.Text())
-			if kmer.Exists() {
-				return kmer
-			}
-		}
-		return nil
 	}
 }
